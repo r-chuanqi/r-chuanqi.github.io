@@ -1,12 +1,47 @@
 <!DOCTYPE html>
+<!--
+  ============================================================================
+  文件：login.html
+  功能：智能知识库学习考试系统 — 统一登录鉴权页面
+  说明：
+    - 支持管理员 / 普通用户两种角色切换登录
+    - 登录态存储在 sessionStorage 中，有效期 24 小时
+    - 登录成功自动跳转到系统首页
+    - 已登录用户再次访问本页面会自动跳走，避免重复登录
+  技术栈：原生 HTML5 + CSS3 + JavaScript（无外部依赖）
+  设计理念：
+    - 卡片式居中布局，简洁大气
+    - 柔和的渐变色彩体系（靛蓝主题色 #5c6bc0）
+    - 响应式设计，适配移动端
+    - 密码错误时提供震动反馈动画
+  ============================================================================
+-->
 <html lang="zh-CN">
 <head>
+  <!-- 文档元数据：字符编码 + 视口适配移动端 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>智能知识库学习考试系统</title>
+
+  <!--
+    ============================================================================
+    CSS 样式表（内联）
+    采用 BEM 风格的命名字段，以 .card 为顶层容器
+    整体配色：靛蓝主题（#5c6bc0），背景浅灰（#f5f6fa）
+    ============================================================================
+  -->
   <style>
+    /*
+     * 全局重置：统一盒模型、清除默认内外边距
+     * box-sizing: border-box 确保 padding/border 包含在元素宽高内
+     */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /*
+     * 页面背景：全屏居中布局
+     * min-height: 100vh 确保内容不足时也铺满整个视口
+     * display: flex 实现水平和垂直双向居中
+     */
     body {
       min-height: 100vh;
       display: flex;
@@ -16,6 +51,11 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
+    /*
+     * 登录卡片容器
+     * 白色圆角卡片 + 轻微阴影，提供浮起层次感
+     * max-width: 420px 限制宽度，确保在大屏幕上不显得过宽
+     */
     .card {
       background: #fff;
       border-radius: 16px;
@@ -26,6 +66,10 @@
       max-width: 420px;
     }
 
+    /*
+     * Logo 区：系统图标 + 标题 + 副标题
+     * 文字居中对齐，图标在上方，标题和副标题垂直排列
+     */
     .logo {
       text-align: center;
       margin-bottom: 32px;
@@ -50,7 +94,12 @@
       margin-top: 4px;
     }
 
-    /* 角色切换 Tab */
+    /*
+     * 角色切换 Tab 栏
+     * 使用 flex 布局让两个按钮均分宽度
+     * 圆角背景 + 内边距形成"胶囊"容器效果
+     * 激活态：白色背景 + 阴影 + 靛蓝色文字
+     */
     .role-tabs {
       display: flex;
       border-radius: 10px;
@@ -78,7 +127,12 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     }
 
-    /* 表单 */
+    /*
+     * 表单块
+     * 每个 .form-group 包含标签 + 输入框
+     * 标签使用 600 字重，深灰色
+     * margin-bottom: 20px 控制表单项之间的间距
+     */
     .form-group {
       margin-bottom: 20px;
     }
@@ -91,6 +145,10 @@
       margin-bottom: 8px;
     }
 
+    /*
+     * 输入框包装器：用于定位前缀图标（🔒）和密码显示/隐藏按钮
+     * position: relative 作为绝对定位子元素的定位锚点
+     */
     .input-wrap {
       position: relative;
     }
@@ -104,6 +162,11 @@
       color: #aaa;
     }
 
+    /*
+     * 输入框样式
+     * 左侧留出 40px 内边距给前缀图标
+     * 圆角边框、浅灰底色、聚焦时变为靛蓝色边框
+     */
     .form-group input {
       width: 100%;
       padding: 12px 14px 12px 40px;
@@ -122,7 +185,10 @@
       background: #fff;
     }
 
-    /* 显示/隐藏密码 */
+    /*
+     * 密码显示/隐藏切换按钮
+     * 绝对定位在输入框右侧，点击切换 input.type 属性
+     */
     .eye-btn {
       position: absolute;
       right: 12px;
@@ -138,7 +204,11 @@
 
     .eye-btn:hover { color: #5c6bc0; }
 
-    /* 错误提示 */
+    /*
+     * 错误提示消息条
+     * 默认隐藏（display: none），密码错误时通过 .show 类显示
+     * 浅红底色 + 红色文字 + 警告图标
+     */
     .error-msg {
       background: #fff3f3;
       border: 1px solid #ffcdd2;
@@ -154,7 +224,11 @@
 
     .error-msg.show { display: flex; }
 
-    /* 登录按钮 */
+    /*
+     * 登录提交按钮
+     * 靛蓝渐变背景 + 白色文字
+     * hover 时略微降低透明度，active 时缩小 2% 实现"按压"反馈
+     */
     .btn-login {
       width: 100%;
       padding: 14px;
@@ -170,8 +244,13 @@
     }
 
     .btn-login:hover { opacity: 0.92; }
+
     .btn-login:active { transform: scale(0.98); }
 
+    /*
+     * 页脚提示（如版本号等轻量信息）
+     * 浅灰色小字，居中，与卡片主体内容拉开间距
+     */
     .footer-tip {
       text-align: center;
       margin-top: 20px;
@@ -179,7 +258,10 @@
       color: #bbb;
     }
 
-    /* 当前角色指示 */
+    /*
+     * 角色徽章：表单上方显示当前选中角色
+     * 管理员用紫色系，普通用户用蓝色系
+     */
     .role-badge {
       display: inline-block;
       padding: 2px 10px;
@@ -190,19 +272,28 @@
     }
 
     .role-badge.admin { background: #ede7f6; color: #512da8; }
+
     .role-badge.user  { background: #e3f2fd; color: #1565c0; }
   </style>
 </head>
 <body>
 
+<!--
+  ============================================================================
+  登录卡片主体
+  结构：Logo 区 → 角色切换 Tab → 错误提示 → 密码输入表单
+  ============================================================================
+-->
 <div class="card">
+
+  <!-- Logo & 系统标题 -->
   <div class="logo">
     <span class="icon">📖</span>
     <h1>智能知识库学习考试系统</h1>
     <p>请选择身份并输入访问密码</p>
   </div>
 
-  <!-- 角色 Tab -->
+  <!-- 角色切换选项卡：点击切换管理员/普通用户 -->
   <div class="role-tabs">
     <button id="tab-admin" class="active" onclick="switchRole('admin')">
       👑 管理员
@@ -212,15 +303,16 @@
     </button>
   </div>
 
-  <!-- 错误提示 -->
+  <!-- 错误提示区：密码错误时显示红色警告 -->
   <div class="error-msg" id="error-msg">
     <span>⚠️</span>
     <span id="error-text">密码错误，请重试</span>
   </div>
 
-  <!-- 表单 -->
+  <!-- 密码输入表单 -->
   <form id="login-form" onsubmit="doLogin(event)">
     <div class="form-group">
+      <!-- 角色标签：动态显示当前选中角色 -->
       <label>
         <span id="role-badge" class="role-badge admin">管理员</span>
       </label>
@@ -233,10 +325,12 @@
           autocomplete="current-password"
           autofocus
         />
+        <!-- 密码明文/密文切换按钮 -->
         <button type="button" class="eye-btn" onclick="togglePwd()">👁</button>
       </div>
     </div>
 
+    <!-- 提交按钮 -->
     <button type="submit" class="btn-login" id="btn-login">
       登 录
     </button>
@@ -244,44 +338,66 @@
 
 </div>
 
+<!--
+  ============================================================================
+  JavaScript 业务逻辑
+  包含：角色切换、登录验证、密码显隐、错误提示、震动反馈、自动跳转
+  ============================================================================
+-->
 <script>
   // ============================================================
-  //  ⚙️ 密码配置区 — 修改这里的密码
+  //  ⚙️ 密码配置区 — 修改这里可以更改登录密码
+  //  每个角色可独立设置密码和登录后跳转地址
   // ============================================================
   const CONFIG = {
     admin: {
-      password: "admin123",    // ← 管理员密码
-      redirectUrl: "/"         // ← 登录后跳转地址
+      password: "admin123",    // ← 管理员密码（可自定义）
+      redirectUrl: "/"         // ← 管理员登录后跳转到首页
     },
     user: {
-      password: "user123",     // ← 普通用户密码
-      redirectUrl: "/"         // ← 登录后跳转地址
+      password: "user123",     // ← 普通用户密码（可自定义）
+      redirectUrl: "/"         // ← 普通用户登录后跳转到首页
     }
   };
   // ============================================================
 
-  let currentRole = "admin";
+  // 当前选中的角色，初始值为管理员
+  var currentRole = "admin";
 
-  // 如果已登录，直接跳走
+  // 页面加载时自动检查：如果已有有效登录态，直接跳转首页
   (function checkAlreadyLoggedIn() {
-    const role = sessionStorage.getItem("blog_role");
-    const ts   = sessionStorage.getItem("blog_login_ts");
+    // 从 sessionStorage 读取角色和时间戳
+    var role = sessionStorage.getItem("blog_role");
+    var ts   = sessionStorage.getItem("blog_login_ts");
     if (role && ts) {
-      const age = Date.now() - parseInt(ts, 10);
-      if (age < 24 * 60 * 60 * 1000) {   // 24h 有效期
+      // 计算登录时间距今的差值（毫秒）
+      var age = Date.now() - parseInt(ts, 10);
+      // 24 小时内为有效登录态
+      if (age < 24 * 60 * 60 * 1000) {
+        // 有效 → 直接跳转到对应角色的首页
         window.location.replace(CONFIG[role]?.redirectUrl || "/");
       } else {
+        // 过期 → 清除登录态，允许重新登录
         sessionStorage.removeItem("blog_role");
         sessionStorage.removeItem("blog_login_ts");
       }
     }
   })();
 
+  /**
+   * 切换角色：管理员 ↔ 普通用户
+   * 更新 Tab 激活样式、角色徽章文字和颜色
+   * @param {string} role - "admin" 或 "user"
+   */
   function switchRole(role) {
     currentRole = role;
+
+    // 切换 Tab 按钮的 active 样式类
     document.getElementById("tab-admin").classList.toggle("active", role === "admin");
     document.getElementById("tab-user").classList.toggle("active",  role === "user");
-    const badge = document.getElementById("role-badge");
+
+    // 更新角色徽章
+    var badge = document.getElementById("role-badge");
     if (role === "admin") {
       badge.textContent = "管理员";
       badge.className = "role-badge admin";
@@ -289,60 +405,98 @@
       badge.textContent = "普通用户";
       badge.className = "role-badge user";
     }
+
+    // 清除错误提示，聚焦密码输入框
     hideError();
     document.getElementById("password").focus();
   }
 
+  /**
+   * 处理登录表单提交
+   * 验证密码 → 存储登录态 → 跳转首页
+   * @param {Event} e - 表单提交事件
+   */
   function doLogin(e) {
+    // 阻止表单默认提交行为（避免页面刷新）
     e.preventDefault();
-    const pwd    = document.getElementById("password").value;
-    const config = CONFIG[currentRole];
 
+    // 获取用户输入的密码
+    var pwd    = document.getElementById("password").value;
+    // 获取当前角色的配置（密码和跳转地址）
+    var config = CONFIG[currentRole];
+
+    // 角色不存在时显示错误
     if (!config) { showError("未知角色"); return; }
 
+    // 验证密码是否匹配
     if (pwd === config.password) {
-      // 存储登录态
+      // 密码正确：将角色和登录时间戳存入 sessionStorage
+      // sessionStorage 的特点：关闭浏览器标签页后自动清除
       sessionStorage.setItem("blog_role",     currentRole);
       sessionStorage.setItem("blog_login_ts", String(Date.now()));
 
-      const btn = document.getElementById("btn-login");
+      // 更新按钮状态，防止重复提交
+      var btn = document.getElementById("btn-login");
       btn.textContent = "✅ 验证成功，跳转中...";
       btn.disabled = true;
 
-      // 登录成功后始终跳转到首页
-      setTimeout(() => {
+      // 延迟 600ms 跳转，给用户看到"验证成功"的反馈
+      setTimeout(function () {
         window.location.replace(config.redirectUrl);
       }, 600);
     } else {
+      // 密码错误：显示错误提示并触发震动动画
       showError("密码错误，请重试");
       shake();
     }
   }
 
+  /**
+   * 显示错误提示消息
+   * 设置错误文字并让错误条可见
+   * @param {string} msg - 错误提示文字
+   */
   function showError(msg) {
-    const el = document.getElementById("error-msg");
+    var el = document.getElementById("error-msg");
     document.getElementById("error-text").textContent = msg;
     el.classList.add("show");
   }
 
+  /**
+   * 隐藏错误提示
+   */
   function hideError() {
     document.getElementById("error-msg").classList.remove("show");
   }
 
+  /**
+   * 切换密码输入框的明文/密文显示
+   * 通过修改 input.type 属性在 "password" 和 "text" 之间切换
+   */
   function togglePwd() {
-    const input = document.getElementById("password");
+    var input = document.getElementById("password");
     input.type = input.type === "password" ? "text" : "password";
   }
 
-  // 震动动画（密码错误时）
+  /**
+   * 震动动画：密码错误时触发表单左右晃动
+   * 通过注入 @keyframes shake 动画实现
+   */
   function shake() {
-    const form = document.getElementById("login-form");
+    var form = document.getElementById("login-form");
+    // 重置动画：先清除再重新应用，确保每次都能触发
     form.style.animation = "none";
-    form.offsetHeight; // reflow
+    form.offsetHeight; // 强制回流，确保动画重置生效
     form.style.animation = "shake 0.4s ease";
   }
 </script>
 
+<!--
+  ============================================================================
+  关键帧动画：登录失败时表单左右震动
+  5 个关键帧，模拟"摇头"效果
+  ============================================================================
+-->
 <style>
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
